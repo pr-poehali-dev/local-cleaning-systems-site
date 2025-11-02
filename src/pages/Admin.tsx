@@ -47,25 +47,43 @@ interface NewsItem {
   published_at: string;
 }
 
+interface Manager {
+  id: number;
+  username: string;
+  is_active: boolean;
+  created_at: string;
+}
+
 const API_BASE = 'https://functions.poehali.dev';
 const PRODUCTS_URL = `${API_BASE}/071283b3-f18e-4231-aeac-544b5bf2c57c`;
 const ORDERS_URL = `${API_BASE}/b9233b21-85e2-4c8d-bd11-e8e053858836`;
-const NEWS_URL = `${API_BASE}/513d5046-e85b-4c64-8dcf-926a37b1a3bf`;
+const NEWS_URL = `${PRODUCTS_URL}/news`;
+const AUTH_URL = `${API_BASE}/f5c7d668-35a6-4985-bc60-47bcdb95d8f8`;
+const MANAGERS_URL = `${API_BASE}/fd857e4a-9b97-43a6-9413-86271e68aa34`;
 
 export default function Admin() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
+  
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [news, setNews] = useState<NewsItem[]>([]);
+  const [managers, setManagers] = useState<Manager[]>([]);
+  
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [isAddingNews, setIsAddingNews] = useState(false);
+  const [isAddingManager, setIsAddingManager] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
 
   const [productForm, setProductForm] = useState({
     name: '',
     description: '',
     price: '',
     capacity: '',
+    image_url: '',
     specifications: {
       material: '',
       dimensions: '',
@@ -76,14 +94,72 @@ export default function Admin() {
 
   const [newsForm, setNewsForm] = useState({
     title: '',
-    content: ''
+    content: '',
+    image_url: ''
+  });
+
+  const [managerForm, setManagerForm] = useState({
+    username: '',
+    password: ''
   });
 
   useEffect(() => {
+    const authData = localStorage.getItem('admin_auth');
+    if (authData) {
+      const { role } = JSON.parse(authData);
+      if (role === 'admin') {
+        setIsAuthenticated(true);
+        fetchAllData();
+      }
+    }
+    setIsLoading(false);
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const response = await fetch(AUTH_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(loginForm)
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.user.role === 'admin') {
+        localStorage.setItem('admin_auth', JSON.stringify(data.user));
+        setIsAuthenticated(true);
+        fetchAllData();
+        toast({ title: 'Добро пожаловать!' });
+      } else {
+        toast({
+          title: 'Ошибка входа',
+          description: 'Неверный логин или пароль',
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось войти',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('admin_auth');
+    setIsAuthenticated(false);
+    navigate('/');
+  };
+
+  const fetchAllData = () => {
     fetchProducts();
     fetchOrders();
     fetchNews();
-  }, []);
+    fetchManagers();
+  };
 
   const fetchProducts = async () => {
     try {
@@ -115,6 +191,32 @@ export default function Admin() {
     }
   };
 
+  const fetchManagers = async () => {
+    try {
+      const response = await fetch(MANAGERS_URL);
+      const data = await response.json();
+      setManagers(data.managers || []);
+    } catch (error) {
+      console.error('Error fetching managers:', error);
+    }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'product' | 'news') => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const imageUrl = reader.result as string;
+        if (type === 'product') {
+          setProductForm({ ...productForm, image_url: imageUrl });
+        } else {
+          setNewsForm({ ...newsForm, image_url: imageUrl });
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleAddProduct = async () => {
     try {
       const response = await fetch(PRODUCTS_URL, {
@@ -125,6 +227,7 @@ export default function Admin() {
           description: productForm.description,
           price: parseFloat(productForm.price),
           capacity: parseInt(productForm.capacity),
+          image_url: productForm.image_url || 'https://cdn.poehali.dev/projects/1520ee67-781a-4c81-9461-1408dd1371d4/files/f3823cc6-8828-47c5-a632-815bebf2c15b.jpg',
           specifications: productForm.specifications
         })
       });
@@ -136,6 +239,7 @@ export default function Admin() {
           description: '',
           price: '',
           capacity: '',
+          image_url: '',
           specifications: { material: '', dimensions: '', weight: '', warranty: '' }
         });
         setIsAddingProduct(false);
@@ -151,17 +255,57 @@ export default function Admin() {
       const response = await fetch(NEWS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newsForm)
+        body: JSON.stringify({
+          title: newsForm.title,
+          content: newsForm.content,
+          image_url: newsForm.image_url || 'https://cdn.poehali.dev/projects/1520ee67-781a-4c81-9461-1408dd1371d4/files/de87fc6d-36e1-4cf1-b311-cb80aa891102.jpg'
+        })
       });
 
       if (response.ok) {
         toast({ title: 'Новость добавлена!' });
-        setNewsForm({ title: '', content: '' });
+        setNewsForm({ title: '', content: '', image_url: '' });
         setIsAddingNews(false);
         fetchNews();
       }
     } catch (error) {
       toast({ title: 'Ошибка', description: 'Не удалось добавить новость', variant: 'destructive' });
+    }
+  };
+
+  const handleAddManager = async () => {
+    try {
+      const response = await fetch(MANAGERS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(managerForm)
+      });
+
+      if (response.ok) {
+        toast({ title: 'Менеджер добавлен!' });
+        setManagerForm({ username: '', password: '' });
+        setIsAddingManager(false);
+        fetchManagers();
+      }
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Не удалось добавить менеджера', variant: 'destructive' });
+    }
+  };
+
+  const handleDeleteManager = async (id: number) => {
+    if (!confirm('Удалить менеджера?')) return;
+    
+    try {
+      const response = await fetch(`${MANAGERS_URL}?id=${id}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        toast({ title: 'Менеджер удален!' });
+        fetchManagers();
+      }
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Не удалось удалить менеджера', variant: 'destructive' });
     }
   };
 
@@ -198,6 +342,61 @@ export default function Admin() {
     return <Badge variant={variants[status] || 'default'}>{labels[status] || status}</Badge>;
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Icon name="Loader2" className="animate-spin text-primary" size={48} />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-muted/30">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <Icon name="Shield" size={64} className="mx-auto mb-4 text-primary" />
+            <CardTitle className="text-3xl">Админ-панель</CardTitle>
+            <CardDescription>Войдите для доступа к управлению</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <Label htmlFor="username">Логин</Label>
+                <Input
+                  id="username"
+                  value={loginForm.username}
+                  onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
+                  placeholder="admin"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="password">Пароль</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={loginForm.password}
+                  onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                  placeholder="••••••"
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full">
+                <Icon name="LogIn" size={18} className="mr-2" />
+                Войти
+              </Button>
+              <Button type="button" variant="ghost" className="w-full" onClick={() => navigate('/')}>
+                <Icon name="Home" size={18} className="mr-2" />
+                На главную
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-muted/30">
       <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur">
@@ -206,19 +405,26 @@ export default function Admin() {
             <Icon name="Shield" size={32} className="text-primary" />
             <h1 className="text-2xl font-bold text-primary">Админ-панель</h1>
           </div>
-          <Button variant="ghost" onClick={() => navigate('/')}>
-            <Icon name="Home" size={20} className="mr-2" />
-            На главную
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={() => navigate('/')}>
+              <Icon name="Home" size={20} className="mr-2" />
+              На главную
+            </Button>
+            <Button variant="outline" onClick={handleLogout}>
+              <Icon name="LogOut" size={20} className="mr-2" />
+              Выйти
+            </Button>
+          </div>
         </div>
       </header>
 
       <main className="container py-8">
         <Tabs defaultValue="orders" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsList className="grid w-full grid-cols-4 mb-8">
             <TabsTrigger value="orders">Заказы ({orders.length})</TabsTrigger>
             <TabsTrigger value="products">Товары ({products.length})</TabsTrigger>
             <TabsTrigger value="news">Новости ({news.length})</TabsTrigger>
+            <TabsTrigger value="managers">Менеджеры ({managers.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="orders" className="space-y-6">
@@ -356,7 +562,7 @@ export default function Admin() {
                         Добавить товар
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                       <DialogHeader>
                         <DialogTitle>Добавить новый товар</DialogTitle>
                       </DialogHeader>
@@ -396,6 +602,18 @@ export default function Admin() {
                             value={productForm.price}
                             onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
                           />
+                        </div>
+                        <div>
+                          <Label htmlFor="product-image">Изображение товара</Label>
+                          <Input
+                            id="product-image"
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleImageUpload(e, 'product')}
+                          />
+                          {productForm.image_url && (
+                            <img src={productForm.image_url} alt="Preview" className="mt-2 h-32 w-32 object-cover rounded" />
+                          )}
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
@@ -522,6 +740,18 @@ export default function Admin() {
                             onChange={(e) => setNewsForm({ ...newsForm, content: e.target.value })}
                           />
                         </div>
+                        <div>
+                          <Label htmlFor="news-image">Изображение новости</Label>
+                          <Input
+                            id="news-image"
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleImageUpload(e, 'news')}
+                          />
+                          {newsForm.image_url && (
+                            <img src={newsForm.image_url} alt="Preview" className="mt-2 h-32 w-full object-cover rounded" />
+                          )}
+                        </div>
                         <Button className="w-full" onClick={handleAddNews}>
                           Опубликовать
                         </Button>
@@ -547,6 +777,94 @@ export default function Admin() {
                         <TableCell>{item.title}</TableCell>
                         <TableCell>
                           {new Date(item.published_at).toLocaleDateString('ru-RU')}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="managers" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Icon name="Users" className="text-primary" />
+                    Управление менеджерами
+                  </span>
+                  <Dialog open={isAddingManager} onOpenChange={setIsAddingManager}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Icon name="UserPlus" size={18} className="mr-2" />
+                        Добавить менеджера
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Добавить менеджера</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="manager-username">Логин *</Label>
+                          <Input
+                            id="manager-username"
+                            value={managerForm.username}
+                            onChange={(e) => setManagerForm({ ...managerForm, username: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="manager-password">Пароль *</Label>
+                          <Input
+                            id="manager-password"
+                            type="password"
+                            value={managerForm.password}
+                            onChange={(e) => setManagerForm({ ...managerForm, password: e.target.value })}
+                          />
+                        </div>
+                        <Button className="w-full" onClick={handleAddManager}>
+                          Создать менеджера
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </CardTitle>
+                <CardDescription>Управление доступами менеджеров</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Логин</TableHead>
+                      <TableHead>Статус</TableHead>
+                      <TableHead>Дата создания</TableHead>
+                      <TableHead>Действия</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {managers.map((manager) => (
+                      <TableRow key={manager.id}>
+                        <TableCell className="font-medium">#{manager.id}</TableCell>
+                        <TableCell>{manager.username}</TableCell>
+                        <TableCell>
+                          <Badge variant={manager.is_active ? 'default' : 'secondary'}>
+                            {manager.is_active ? 'Активен' : 'Неактивен'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {new Date(manager.created_at).toLocaleDateString('ru-RU')}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteManager(manager.id)}
+                          >
+                            <Icon name="Trash2" size={16} className="mr-1" />
+                            Удалить
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}

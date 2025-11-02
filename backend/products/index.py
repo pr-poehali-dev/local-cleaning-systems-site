@@ -1,7 +1,7 @@
 '''
-Business: API для управления товарами (каталог локальных очистных сооружений)
-Args: event с httpMethod, body, queryStringParameters
-Returns: HTTP response с товарами или результатом операции
+Business: API для управления товарами и новостями
+Args: event с httpMethod, body, queryStringParameters, path для /news или /pricelists
+Returns: HTTP response с товарами/новостями или результатом операции
 '''
 import json
 import os
@@ -11,6 +11,7 @@ from psycopg2.extras import RealDictCursor
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     method: str = event.get('httpMethod', 'GET')
+    path: str = event.get('path', '')
     
     if method == 'OPTIONS':
         return {
@@ -30,7 +31,73 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     
     try:
-        if method == 'GET':
+        if '/news' in path:
+            if method == 'GET':
+                cursor.execute('SELECT * FROM news ORDER BY published_at DESC')
+                news = cursor.fetchall()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'news': news}, default=str),
+                    'isBase64Encoded': False
+                }
+            
+            elif method == 'POST':
+                body = json.loads(event.get('body', '{}'))
+                
+                cursor.execute('''
+                    INSERT INTO news (title, content, image_url) 
+                    VALUES (%s, %s, %s) 
+                    RETURNING id
+                ''', (
+                    body['title'],
+                    body['content'],
+                    body.get('image_url', 'https://cdn.poehali.dev/projects/1520ee67-781a-4c81-9461-1408dd1371d4/files/de87fc6d-36e1-4cf1-b311-cb80aa891102.jpg')
+                ))
+                
+                new_id = cursor.fetchone()['id']
+                conn.commit()
+                
+                return {
+                    'statusCode': 201,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'id': new_id, 'message': 'News created'}),
+                    'isBase64Encoded': False
+                }
+        
+        elif '/pricelists' in path:
+            if method == 'GET':
+                cursor.execute('SELECT * FROM price_lists ORDER BY created_at DESC')
+                price_lists = cursor.fetchall()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'price_lists': price_lists}, default=str),
+                    'isBase64Encoded': False
+                }
+            
+            elif method == 'POST':
+                body = json.loads(event.get('body', '{}'))
+                
+                cursor.execute('''
+                    INSERT INTO price_lists (title, file_url) 
+                    VALUES (%s, %s) 
+                    RETURNING id
+                ''', (body['title'], body['file_url']))
+                
+                new_id = cursor.fetchone()['id']
+                conn.commit()
+                
+                return {
+                    'statusCode': 201,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'id': new_id, 'message': 'Price list created'}),
+                    'isBase64Encoded': False
+                }
+        
+        elif method == 'GET':
             cursor.execute('''
                 SELECT p.*, c.name as category_name 
                 FROM products p 

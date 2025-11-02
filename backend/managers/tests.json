@@ -1,0 +1,28 @@
+{
+  "tests": [
+    {
+      "name": "Get all managers",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "managers": "array"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Create new manager",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "username": "testmanager",
+        "password": "test123"
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "id": "number"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

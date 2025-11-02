@@ -37,7 +37,8 @@ interface NewsItem {
 const API_BASE = 'https://functions.poehali.dev';
 const PRODUCTS_URL = `${API_BASE}/071283b3-f18e-4231-aeac-544b5bf2c57c`;
 const ORDERS_URL = `${API_BASE}/b9233b21-85e2-4c8d-bd11-e8e053858836`;
-const NEWS_URL = `${API_BASE}/513d5046-e85b-4c64-8dcf-926a37b1a3bf`;
+const NEWS_URL = `${PRODUCTS_URL}/news`;
+const PRICELISTS_URL = `${PRODUCTS_URL}/pricelists`;
 
 export default function Index() {
   const navigate = useNavigate();
@@ -152,6 +153,9 @@ export default function Index() {
             <button onClick={() => setActiveTab('installation')} className="text-sm font-medium hover:text-primary transition-colors">
               Установка
             </button>
+            <button onClick={() => setActiveTab('delivery')} className="text-sm font-medium hover:text-primary transition-colors">
+              Доставка
+            </button>
             <button onClick={() => setActiveTab('calculator')} className="text-sm font-medium hover:text-primary transition-colors">
               Калькулятор
             </button>
@@ -192,10 +196,11 @@ export default function Index() {
         </section>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6 mb-8">
+          <TabsList className="grid w-full grid-cols-7 mb-8">
             <TabsTrigger value="catalog">Каталог</TabsTrigger>
             <TabsTrigger value="about">О компании</TabsTrigger>
             <TabsTrigger value="installation">Установка</TabsTrigger>
+            <TabsTrigger value="delivery">Доставка</TabsTrigger>
             <TabsTrigger value="calculator">Калькулятор</TabsTrigger>
             <TabsTrigger value="news">Новости</TabsTrigger>
             <TabsTrigger value="contacts">Контакты</TabsTrigger>
@@ -424,6 +429,106 @@ export default function Index() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="delivery" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-3xl">Доставка и условия</CardTitle>
+                <CardDescription className="text-lg">Информация о доставке и монтаже оборудования</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h3 className="text-xl font-semibold flex items-center gap-2">
+                      <Icon name="Truck" className="text-primary" />
+                      Доставка по России
+                    </h3>
+                    <ul className="space-y-3">
+                      <li className="flex gap-3">
+                        <Icon name="Check" className="text-primary flex-shrink-0 mt-1" />
+                        <span>Бесплатная доставка по Москве и МО</span>
+                      </li>
+                      <li className="flex gap-3">
+                        <Icon name="Check" className="text-primary flex-shrink-0 mt-1" />
+                        <span>Доставка в регионы транспортными компаниями</span>
+                      </li>
+                      <li className="flex gap-3">
+                        <Icon name="Check" className="text-primary flex-shrink-0 mt-1" />
+                        <span>Упаковка для безопасной транспортировки</span>
+                      </li>
+                      <li className="flex gap-3">
+                        <Icon name="Check" className="text-primary flex-shrink-0 mt-1" />
+                        <span>Срок доставки: 1-3 дня по Москве, 3-14 дней по РФ</span>
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h3 className="text-xl font-semibold flex items-center gap-2">
+                      <Icon name="Wrench" className="text-primary" />
+                      Монтаж «под ключ»
+                    </h3>
+                    <ul className="space-y-3">
+                      <li className="flex gap-3">
+                        <Icon name="Check" className="text-primary flex-shrink-0 mt-1" />
+                        <span>Выезд специалиста на объект - бесплатно</span>
+                      </li>
+                      <li className="flex gap-3">
+                        <Icon name="Check" className="text-primary flex-shrink-0 mt-1" />
+                        <span>Полный цикл работ: от котлована до запуска</span>
+                      </li>
+                      <li className="flex gap-3">
+                        <Icon name="Check" className="text-primary flex-shrink-0 mt-1" />
+                        <span>Сертифицированные монтажные бригады</span>
+                      </li>
+                      <li className="flex gap-3">
+                        <Icon name="Check" className="text-primary flex-shrink-0 mt-1" />
+                        <span>Гарантия на монтажные работы 2 года</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="bg-muted p-6 rounded-xl">
+                  <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <Icon name="FileText" className="text-primary" />
+                    Прайс-листы
+                  </h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <Button variant="outline" className="justify-start h-auto py-4" asChild>
+                      <a href="#" download>
+                        <Icon name="Download" size={20} className="mr-2" />
+                        <div className="text-left">
+                          <div className="font-medium">Каталог оборудования 2024</div>
+                          <div className="text-sm text-muted-foreground">PDF, 2.5 МБ</div>
+                        </div>
+                      </a>
+                    </Button>
+                    <Button variant="outline" className="justify-start h-auto py-4" asChild>
+                      <a href="#" download>
+                        <Icon name="Download" size={20} className="mr-2" />
+                        <div className="text-left">
+                          <div className="font-medium">Прайс-лист монтажных работ</div>
+                          <div className="text-sm text-muted-foreground">PDF, 800 КБ</div>
+                        </div>
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="bg-primary/10 p-6 rounded-xl border-2 border-primary/20">
+                  <h3 className="text-xl font-semibold mb-3 flex items-center gap-2">
+                    <Icon name="Gift" className="text-primary" />
+                    Акция: Монтаж в подарок!
+                  </h3>
+                  <p className="text-lg">
+                    При покупке системы очистки в ноябре 2024 — монтаж «под ключ» бесплатно!
+                    Экономия до 50 000 ₽.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="calculator" className="space-y-6">
             <Card>
               <CardHeader>
@@ -593,9 +698,20 @@ export default function Index() {
             </div>
             <p className="text-muted-foreground">© 2024 ЭкоВода. Все права защищены.</p>
             <div className="flex gap-4">
-              <Icon name="Phone" className="text-primary cursor-pointer hover:scale-110 transition-transform" />
-              <Icon name="Mail" className="text-primary cursor-pointer hover:scale-110 transition-transform" />
-              <Icon name="MessageCircle" className="text-primary cursor-pointer hover:scale-110 transition-transform" />
+              <a href="https://youtube.com/@hydrolos" target="_blank" rel="noopener noreferrer" className="text-primary hover:scale-110 transition-transform">
+                <Icon name="Youtube" size={28} />
+              </a>
+              <a href="https://vk.com/hydrolos" target="_blank" rel="noopener noreferrer" className="text-primary hover:scale-110 transition-transform">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M15.07 2H8.93C3.33 2 2 3.33 2 8.93v6.14C2 20.67 3.33 22 8.93 22h6.14c5.6 0 6.93-1.33 6.93-6.93V8.93C22 3.33 20.67 2 15.07 2zm3.79 14.94h-1.46c-.54 0-.71-.43-1.68-1.41-0.85-0.82-1.23-0.93-1.44-0.93-0.3 0-0.38 0.08-0.38 0.47v1.29c0 0.35-0.11 0.56-1.03 0.56-1.5 0-3.16-0.91-4.33-2.6-1.76-2.37-2.24-4.15-2.24-4.51 0-0.21 0.08-0.41 0.47-0.41h1.46c0.35 0 0.48 0.16 0.62 0.54 0.69 2.01 1.86 3.77 2.34 3.77 0.18 0 0.26-0.08 0.26-0.54v-2.11c-0.06-0.98-0.58-1.06-0.58-1.41 0-0.17 0.14-0.34 0.37-0.34h2.29c0.29 0 0.4 0.16 0.4 0.51v2.84c0 0.29 0.13 0.4 0.21 0.4 0.18 0 0.33-0.11 0.66-0.44 1.01-1.14 1.73-2.9 1.73-2.9 0.1-0.2 0.25-0.4 0.64-0.4h1.46c0.43 0 0.53 0.22 0.43 0.51-0.18 0.85-1.91 3.12-1.91 3.12-0.15 0.24-0.21 0.35 0 0.63 0.15 0.21 0.64 0.63 0.97 1.01 0.59 0.67 1.04 1.23 1.16 1.62 0.12 0.39-0.07 0.59-0.46 0.59z"/>
+                </svg>
+              </a>
+              <a href="tel:+74951234567" className="text-primary hover:scale-110 transition-transform">
+                <Icon name="Phone" size={28} />
+              </a>
+              <a href="mailto:info@ekovoda.ru" className="text-primary hover:scale-110 transition-transform">
+                <Icon name="Mail" size={28} />
+              </a>
             </div>
           </div>
         </div>
