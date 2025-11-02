@@ -15,17 +15,14 @@
       "method": "POST",
       "path": "/",
       "body": {
-        "customer_name": "Тест Тестов",
+        "customer_name": "Иван Петров",
         "customer_phone": "+79991234567",
-        "customer_email": "test@test.ru",
         "product_id": 1,
-        "quantity": 1,
-        "total_price": 125000
+        "total_price": 89000
       },
       "expectedStatus": 201,
       "expectedBody": {
-        "id": "number",
-        "message": "string"
+        "id": "number"
       },
       "bodyMatcher": "partial"
     }

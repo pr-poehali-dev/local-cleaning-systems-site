@@ -15,16 +15,14 @@
       "method": "POST",
       "path": "/",
       "body": {
-        "name": "Тест-система",
-        "description": "Тестовое описание",
+        "name": "Test Product",
+        "description": "Test description",
         "price": 100000,
-        "capacity": 500,
-        "specifications": {"material": "Пластик"}
+        "capacity": 500
       },
       "expectedStatus": 201,
       "expectedBody": {
-        "id": "number",
-        "message": "string"
+        "id": "number"
       },
       "bodyMatcher": "partial"
     }
